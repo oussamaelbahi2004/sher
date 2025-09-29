@@ -58,7 +58,7 @@
         .btn-danger:hover:not(:disabled) {
             background-color: #dc2626;
         }
-        textarea {
+        input[type="text"] {
             background-color: #1e1e1e;
             color: #d4d4d4;
             border: 1px solid #555;
@@ -66,8 +66,6 @@
             border-radius: 0.5rem;
             padding: 0.75rem;
             font-family: monospace;
-            min-height: 120px;
-            resize: vertical;
         }
         video {
             width: 100%;
@@ -98,6 +96,18 @@
             align-items: center;
             margin-right: 0.75rem;
         }
+        .room-id {
+            font-family: monospace;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #3b82f6;
+            background-color: #1e1e1e;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #555;
+            text-align: center;
+            letter-spacing: 2px;
+        }
         .hidden {
             display: none;
         }
@@ -124,42 +134,26 @@
             <!-- Sender View (Phone) -->
             <div id="senderView" class="hidden space-y-6">
                  <div>
-                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Paste Offer from PS4</h2>
-                    <p class="text-gray-400 ml-12 mb-4">Scan the QR code on the PS4 screen. Copy the text from the QR code and paste it into the box below.</p>
-                    <textarea id="offerInput" placeholder="Paste offer from PS4 here..."></textarea>
-                    <div class="ml-12 mt-2 flex flex-wrap gap-2">
-                        <button id="createAnswerBtn" class="btn btn-primary" disabled>Share Screen & Create Answer</button>
-                        <button id="createCameraAnswerBtn" class="btn btn-secondary" disabled>Share Camera & Create Answer</button>
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Enter Room ID from PS4</h2>
+                    <p class="text-gray-400 ml-12 mb-4">Scan the simple QR code on the PS4 screen and enter the Room ID below.</p>
+                    <div class="ml-12">
+                        <input type="text" id="roomIdInput" placeholder="Enter Room ID...">
                     </div>
-                    <p class="text-sm text-center text-gray-500 mt-4">Note: The QR code is shown on the Receiver (PS4) screen, not on this device.</p>
-                </div>
-                
-                <div id="senderAnswerSection" class="hidden">
-                    <h2 class="text-xl font-semibold flex items-center"><span class="step">2</span>Copy & Share This Answer</h2>
-                    <p class="text-gray-400 ml-12 mb-4">Click the copy button and paste this text back into the PS4 to complete the connection.</p>
-                    <div class="relative">
-                        <textarea id="answerOutput" readonly></textarea>
-                        <button id="copyAnswerBtn" class="absolute top-2 right-2 btn btn-secondary text-sm py-1 px-2">Copy</button>
+                    <div class="ml-12 mt-4 flex flex-wrap gap-2">
+                        <button id="createAnswerBtn" class="btn btn-primary" disabled>Share Screen</button>
+                        <button id="createCameraAnswerBtn" class="btn btn-secondary" disabled>Share Camera</button>
                     </div>
                 </div>
             </div>
 
             <!-- Receiver View (PS4) -->
-            <div id="receiverView" class="hidden space-y-6">
-                <div>
-                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Scan QR Code on Phone</h2>
-                    <p class="text-gray-400 ml-12 mb-4">A QR code with connection details will appear below. Scan it with your phone.</p>
-                    <div id="offerQrCode">
-                         <div id="qrcode"><p class="text-gray-600">Generating QR Code...</p></div>
-                         <p class="text-center text-sm text-gray-400 mt-2">Go to your Phone and follow Step 1 there.</p>
-                    </div>
-                </div>
-                
-                <div id="receiverAnswerSection" class="hidden">
-                    <h2 class="text-xl font-semibold flex items-center"><span class="step">2</span>Paste Answer from Phone</h2>
-                    <p class="text-gray-400 ml-12 mb-4">After completing Step 2 on your phone, paste the generated "Answer" text here to connect.</p>
-                    <textarea id="answerInput" placeholder="Paste answer from phone here..."></textarea>
-                    <button id="connectBtn" class="btn btn-primary mt-2 ml-12">Connect</button>
+            <div id="receiverView" class="hidden space-y-6 text-center">
+                <h2 class="text-xl font-semibold flex items-center justify-center"><span class="step">1</span>Scan this QR on your Phone</h2>
+                <p class="text-gray-400 mb-4">A simple Room ID and QR code will appear below. Scan it with your phone and enter the ID.</p>
+                <div id="roomInfo" class="hidden">
+                    <p class="room-id" id="roomIdDisplay"></p>
+                    <div id="qrcode"></div>
+                    <p class="text-gray-400 mt-4">Waiting for phone to connect...</p>
                 </div>
             </div>
             
@@ -168,11 +162,15 @@
             <video id="videoPlayer" class="mt-4 hidden" autoplay playsinline></video>
         </div>
         <footer class="text-center text-gray-500 mt-4 text-sm">
-            <p>Connection is P2P on your local Wi-Fi. No data is sent to the internet.</p>
+            <p>Connection is P2P on your local Wi-Fi after a secure handshake.</p>
         </footer>
     </div>
 
-    <script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
         // --- Element Definitions ---
         const initialView = document.getElementById('initialView');
         const senderView = document.getElementById('senderView');
@@ -180,34 +178,50 @@
         const startSenderBtn = document.getElementById('startSender');
         const startReceiverBtn = document.getElementById('startReceiver');
         const resetBtn = document.getElementById('resetBtn');
-        
-        // Sender (Phone) Elements
-        const offerInput = document.getElementById('offerInput');
+        const roomIdInput = document.getElementById('roomIdInput');
         const createAnswerBtn = document.getElementById('createAnswerBtn');
         const createCameraAnswerBtn = document.getElementById('createCameraAnswerBtn');
-        const senderAnswerSection = document.getElementById('senderAnswerSection');
-        const answerOutput = document.getElementById('answerOutput');
-        const copyAnswerBtn = document.getElementById('copyAnswerBtn');
-        
-        // Receiver (PS4) Elements
-        const offerQrCodeDiv = document.getElementById('offerQrCode');
+        const roomInfo = document.getElementById('roomInfo');
+        const roomIdDisplay = document.getElementById('roomIdDisplay');
         const qrcodeContainer = document.getElementById('qrcode');
-        const receiverAnswerSection = document.getElementById('receiverAnswerSection');
-        const answerInput = document.getElementById('answerInput');
-        const connectBtn = document.getElementById('connectBtn');
-        
-        // Common Elements
         const videoPlayer = document.getElementById('videoPlayer');
         const status = document.getElementById('status');
-
+        
+        // --- Firebase & WebRTC Globals ---
         let peerConnection;
         let localStream;
+        let db;
+        let currentRoomId;
+        let unsubscribe; // To stop listening to Firestore changes
+
         const configuration = {
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         };
 
+        // --- Firebase Initialization ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'screen-share-poc';
+        let firebaseConfig;
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+        } catch(e) {
+            console.error("Firebase config parsing error:", e);
+            status.textContent = "Error: Invalid Firebase configuration.";
+        }
+        
+        if (firebaseConfig) {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+            const auth = getAuth(app);
+            signInAnonymously(auth).catch(error => {
+                console.error("Anonymous sign-in failed:", error);
+                status.textContent = "Error: Could not authenticate.";
+            });
+        } else {
+             status.textContent = "Error: Firebase is not configured.";
+        }
+       
         // --- Core Functions ---
-        function resetState() {
+        async function resetState() {
             if (peerConnection) {
                 peerConnection.close();
                 peerConnection = null;
@@ -216,19 +230,25 @@
                 localStream.getTracks().forEach(track => track.stop());
                 localStream = null;
             }
+            if (unsubscribe) {
+                unsubscribe();
+                unsubscribe = null;
+            }
+            if (currentRoomId && db) {
+                const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+                await deleteDoc(roomRef).catch(e => console.error("Could not delete room doc", e));
+                currentRoomId = null;
+            }
 
             initialView.classList.remove('hidden');
             senderView.classList.add('hidden');
             receiverView.classList.add('hidden');
             videoPlayer.classList.add('hidden');
-            senderAnswerSection.classList.add('hidden');
-            receiverAnswerSection.classList.add('hidden');
             resetBtn.classList.add('hidden');
+            roomInfo.classList.add('hidden');
 
-            answerInput.value = '';
-            offerInput.value = '';
-            answerOutput.value = '';
-            qrcodeContainer.innerHTML = '<p class="text-gray-600">Generating QR Code...</p>';
+            roomIdInput.value = '';
+            qrcodeContainer.innerHTML = '';
             videoPlayer.srcObject = null;
             status.textContent = '';
             
@@ -237,160 +257,41 @@
         }
 
         resetBtn.onclick = resetState;
+        window.onbeforeunload = resetState;
 
         // --- Event Listeners ---
-        offerInput.addEventListener('input', () => {
-            const hasText = offerInput.value.trim() !== '';
+        roomIdInput.addEventListener('input', () => {
+            const hasText = roomIdInput.value.trim() !== '';
             createAnswerBtn.disabled = !hasText;
             createCameraAnswerBtn.disabled = !hasText;
         });
 
         // --- Role Selection ---
         startSenderBtn.onclick = () => {
+            if (!db) return;
             initialView.classList.add('hidden');
             senderView.classList.remove('hidden');
             resetBtn.classList.remove('hidden');
-            videoPlayer.classList.remove('hidden'); // Show local video preview
+            videoPlayer.classList.remove('hidden');
             status.textContent = "Ready to share video.";
         };
 
         startReceiverBtn.onclick = async () => {
+            if (!db) return;
             initialView.classList.add('hidden');
             receiverView.classList.remove('hidden');
             resetBtn.classList.remove('hidden');
             videoPlayer.classList.remove('hidden');
-            status.textContent = "Ready to receive stream. Creating offer...";
-            try {
-                setupPeerConnection('receiver');
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-                
-                status.textContent = "Offer created. Scan QR code on your Phone.";
-                const offerSdp = JSON.stringify(peerConnection.localDescription);
-                
-                qrcodeContainer.innerHTML = ""; // Clear placeholder
-                new QRCode(qrcodeContainer, { text: offerSdp, width: 256, height: 256 });
-                receiverAnswerSection.classList.remove('hidden');
+            status.textContent = "Creating a new room...";
 
-            } catch (error) {
-                 console.error("Error creating offer:", error);
-                status.textContent = `Error: ${error.message}`;
-                resetState();
-            }
-        };
-        
-        // --- Refactored Sender Logic ---
-        const startStreaming = async (streamType) => {
-             try {
-                 if (!offerInput.value) {
-                    throw new Error("Offer field is empty. Please paste the offer from the PS4.");
-                }
-                status.textContent = `Requesting ${streamType} access... Please approve the prompt.`;
-
-                // Get the media stream (screen or camera)
-                if (streamType === 'screen') {
-                    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                        throw new Error("Your browser does not support screen sharing. Try sharing your camera instead.");
-                    }
-                    try {
-                        localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                    } catch (err) {
-                        console.error("getDisplayMedia error:", err);
-                        let errorMessage = "Could not start screen sharing. ";
-                        if (err.name === 'NotAllowedError') {
-                             errorMessage += "You denied the screen sharing permission.";
-                        } else {
-                            errorMessage += "An unknown error occurred.";
-                        }
-                        throw new Error(errorMessage);
-                    }
-                } else { // 'camera'
-                     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                        throw new Error("Your browser does not support camera access.");
-                    }
-                     try {
-                        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    } catch (err) {
-                        console.error("getUserMedia error:", err);
-                        let errorMessage = "Could not start camera. ";
-                        if (err.name === 'NotAllowedError') {
-                             errorMessage += "You denied camera/microphone permission.";
-                        } else {
-                            errorMessage += "Is your camera already in use?";
-                        }
-                        throw new Error(errorMessage);
-                    }
-                }
-
-                videoPlayer.srcObject = localStream;
-                videoPlayer.muted = true;
-
-                status.textContent = "Stream captured. Creating answer...";
-                setupPeerConnection('sender');
-                
-                localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, localStream);
-                });
-
-                let offer;
-                try {
-                    offer = JSON.parse(offerInput.value.trim());
-                } catch (e) {
-                    throw new Error("Invalid offer format. Please re-scan the QR code and paste the full text.");
-                }
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-            } catch (error) {
-                console.error("Error creating answer:", error);
-                status.textContent = `Error: ${error.message}`;
-                if(localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
-                }
-            }
-        };
-
-        createAnswerBtn.onclick = () => startStreaming('screen');
-        createCameraAnswerBtn.onclick = () => startStreaming('camera');
-
-        copyAnswerBtn.onclick = () => {
-            answerOutput.select();
-            document.execCommand('copy');
-            status.textContent = "Answer copied to clipboard!";
-        };
-
-        // --- Receiver (PS4) Logic ---
-        connectBtn.onclick = async () => {
-            try {
-                if (!answerInput.value) {
-                    throw new Error("Answer field is empty.");
-                }
-                let answer;
-                try {
-                    answer = JSON.parse(answerInput.value.trim());
-                } catch(e) {
-                     throw new Error("Invalid answer format. Please copy and paste the answer text again.");
-                }
-                status.textContent = "Connecting...";
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
-            } catch (error) {
-                console.error("Error setting remote description:", error);
-                status.textContent = `Error: ${error.message}`;
-            }
-        };
-
-        // --- Common PeerConnection Logic ---
-        function setupPeerConnection(role) {
+            currentRoomId = generateRoomId();
+            const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+            
             peerConnection = new RTCPeerConnection(configuration);
-
-            peerConnection.onicecandidate = event => {
-                if (event.candidate === null) {
-                    if (role === 'sender') {
-                        status.textContent = "Answer created. Copy it to the PS4.";
-                        answerOutput.value = JSON.stringify(peerConnection.localDescription);
-                        senderAnswerSection.classList.remove('hidden');
-                    }
+            
+            peerConnection.onicecandidate = async event => {
+                if (event.candidate) {
+                    await updateDoc(roomRef, { 'offer.candidates': { [Date.now()]: event.candidate.toJSON() } });
                 }
             };
             
@@ -400,17 +301,81 @@
                 videoPlayer.muted = false;
             };
 
-            peerConnection.onconnectionstatechange = () => {
-                const state = peerConnection.connectionState;
-                status.textContent = `Connection state: ${state}`;
-                if (state === 'connected') {
-                    senderView.classList.add('hidden');
-                    receiverView.classList.add('hidden');
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            await setDoc(roomRef, { offer: { sdp: offer.sdp, type: offer.type } });
+            
+            roomIdDisplay.textContent = currentRoomId;
+            new QRCode(qrcodeContainer, { text: currentRoomId, width: 256, height: 256 });
+            roomInfo.classList.remove('hidden');
+            
+            unsubscribe = onSnapshot(roomRef, async (snapshot) => {
+                const data = snapshot.data();
+                if (data && data.answer && !peerConnection.currentRemoteDescription) {
+                    status.textContent = "Connecting...";
+                    const answer = new RTCSessionDescription(data.answer);
+                    await peerConnection.setRemoteDescription(answer);
                 }
-                if (state === 'failed' || state === 'disconnected' || state === 'closed') {
-                    setTimeout(resetState, 2000);
+            });
+        };
+        
+        // --- Sender Logic ---
+        const startStreaming = async (streamType) => {
+            if (!db) return;
+            currentRoomId = roomIdInput.value.trim();
+            if (!currentRoomId) {
+                status.textContent = "Error: Please enter a Room ID.";
+                return;
+            }
+
+            const roomRef = doc(db, `artifacts/${appId}/public/data/rooms`, currentRoomId);
+            status.textContent = `Requesting ${streamType} access...`;
+
+            try {
+                if (streamType === 'screen') {
+                    localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                } else {
+                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 }
-            };
+                videoPlayer.srcObject = localStream;
+                videoPlayer.muted = true;
+            } catch (err) {
+                 status.textContent = `Error: Could not get ${streamType} stream. Permission denied?`;
+                 console.error(err);
+                 return;
+            }
+
+            peerConnection = new RTCPeerConnection(configuration);
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+            unsubscribe = onSnapshot(roomRef, (snapshot) => {
+                const data = snapshot.data();
+                if (data && data.offer && data.offer.candidates) {
+                    Object.values(data.offer.candidates).forEach(candidate => {
+                        peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                    });
+                }
+            });
+
+            const offer = (await onSnapshot(roomRef, s => s).docs[0]?.data())?.offer;
+            if (offer) {
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                await updateDoc(roomRef, { answer: { sdp: answer.sdp, type: answer.type } });
+                status.textContent = "Connection established!";
+                senderView.classList.add('hidden');
+            } else {
+                 status.textContent = "Error: Room not found or offer is missing.";
+            }
+        };
+
+        createAnswerBtn.onclick = () => startStreaming('screen');
+        createCameraAnswerBtn.onclick = () => startStreaming('camera');
+        
+        function generateRoomId() {
+            return `${Math.random().toString(36).substr(2, 4).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
         }
     </script>
 </body>
