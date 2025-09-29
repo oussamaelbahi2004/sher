@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Screen Share PoC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 1rem;
+        }
+        .card {
+            background-color: #2a2a2a;
+            border-radius: 0.75rem;
+            padding: 2rem;
+            border: 1px solid #444;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.2s ease-in-out;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+        .btn-secondary {
+            background-color: #4b5563;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #374151;
+        }
+        textarea {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            border: 1px solid #555;
+            width: 100%;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            font-family: monospace;
+            min-height: 120px;
+            resize: vertical;
+        }
+        video {
+            width: 100%;
+            border-radius: 0.5rem;
+            background-color: #000;
+        }
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin: 1rem auto;
+            width: 280px;
+            height: 280px;
+        }
+        .step {
+            padding: 0.5rem 1rem;
+            background-color: #3b82f6;
+            color: white;
+            border-radius: 9999px;
+            font-weight: bold;
+            min-width: 32px;
+            height: 32px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 0.75rem;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 class="text-3xl font-bold text-center mb-2">Local Screen Share</h1>
+            <p class="text-center text-gray-400 mb-6">PWA PoC for Phone → PS4</p>
+            
+            <!-- Initial View -->
+            <div id="initialView" class="text-center space-y-4">
+                <p>Choose your role for this device:</p>
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button id="startSender" class="btn btn-primary">📱 Share Screen (Phone)</button>
+                    <button id="startReceiver" class="btn btn-secondary">🎮 Receive Stream (PS4)</button>
+                </div>
+            </div>
+
+            <!-- Sender View -->
+            <div id="senderView" class="hidden space-y-6">
+                <div>
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Generate Connection Offer</h2>
+                    <p class="text-gray-400 ml-12 mb-4">Click the button to start sharing your screen and generate a QR code with connection details.</p>
+                    <button id="shareScreenBtn" class="btn btn-primary ml-12">Start Sharing</button>
+                    <div id="offerQrCode" class="hidden">
+                         <div id="qrcode"></div>
+                         <p class="text-center text-sm text-gray-400 mt-2">Scan this on the receiver device.</p>
+                    </div>
+                </div>
+                
+                <div id="senderAnswerSection" class="hidden">
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">2</span>Paste Receiver's Answer</h2>
+                    <p class="text-gray-400 ml-12 mb-4">Once the receiver generates an "Answer", paste it here to establish the connection.</p>
+                    <textarea id="answerInput" placeholder="Paste answer from receiver here..."></textarea>
+                    <button id="connectBtn" class="btn btn-primary mt-2 ml-12">Connect</button>
+                </div>
+            </div>
+
+            <!-- Receiver View -->
+            <div id="receiverView" class="hidden space-y-6">
+                 <div>
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Paste Sender's Offer</h2>
+                    <p class="text-gray-400 ml-12 mb-4">Use your phone to scan the QR code on the sender's screen, copy the text, and paste it below.</p>
+                    <textarea id="offerInput" placeholder="Paste offer from sender here..."></textarea>
+                    <button id="createAnswerBtn" class="btn btn-primary mt-2 ml-12">Create Answer</button>
+                </div>
+                
+                <div id="receiverAnswerSection" class="hidden">
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">2</span>Copy & Share This Answer</h2>
+                    <p class="text-gray-400 ml-12 mb-4">Copy the text below and paste it into the sender's device to complete the connection.</p>
+                    <textarea id="answerOutput" readonly></textarea>
+                </div>
+            </div>
+            
+             <!-- Common Elements -->
+            <div id="status" class="text-center text-yellow-400 mt-6 font-semibold"></div>
+            <video id="videoPlayer" class="mt-4 hidden" autoplay playsinline></video>
+        </div>
+        <footer class="text-center text-gray-500 mt-4 text-sm">
+            <p>Connection is P2P on your local Wi-Fi. No data is sent to the internet.</p>
+        </footer>
+    </div>
+
+    <script>
+        const initialView = document.getElementById('initialView');
+        const senderView = document.getElementById('senderView');
+        const receiverView = document.getElementById('receiverView');
+        const startSenderBtn = document.getElementById('startSender');
+        const startReceiverBtn = document.getElementById('startReceiver');
+        
+        const shareScreenBtn = document.getElementById('shareScreenBtn');
+        const offerQrCodeDiv = document.getElementById('offerQrCode');
+        const qrcodeContainer = document.getElementById('qrcode');
+        const senderAnswerSection = document.getElementById('senderAnswerSection');
+        const answerInput = document.getElementById('answerInput');
+        const connectBtn = document.getElementById('connectBtn');
+        
+        const offerInput = document.getElementById('offerInput');
+        const createAnswerBtn = document.getElementById('createAnswerBtn');
+        const receiverAnswerSection = document.getElementById('receiverAnswerSection');
+        const answerOutput = document.getElementById('answerOutput');
+        
+        const videoPlayer = document.getElementById('videoPlayer');
+        const status = document.getElementById('status');
+
+        let peerConnection;
+        let localStream;
+        const configuration = {
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] // Using a public STUN server
+        };
+
+        // --- Role Selection ---
+        startSenderBtn.onclick = () => {
+            initialView.classList.add('hidden');
+            senderView.classList.remove('hidden');
+            status.textContent = "Ready to share screen.";
+        };
+
+        startReceiverBtn.onclick = () => {
+            initialView.classList.add('hidden');
+            receiverView.classList.remove('hidden');
+            videoPlayer.classList.remove('hidden');
+            status.textContent = "Ready to receive stream.";
+        };
+
+        // --- Sender Logic ---
+        shareScreenBtn.onclick = async () => {
+            try {
+                status.textContent = "Requesting screen access...";
+                localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                videoPlayer.classList.remove('hidden');
+                videoPlayer.srcObject = localStream;
+                videoPlayer.muted = true;
+                
+                status.textContent = "Creating connection offer...";
+                setupPeerConnection();
+                
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+                
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                peerConnection.onicegatheringstatechange = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        status.textContent = "Offer created. Scan QR code.";
+                        const offerSdp = JSON.stringify(peerConnection.localDescription);
+                        
+                        qrcodeContainer.innerHTML = ""; // Clear previous QR code
+                        new QRCode(qrcodeContainer, {
+                            text: offerSdp,
+                            width: 256,
+                            height: 256,
+                            colorDark : "#000000",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.H
+                        });
+                        offerQrCodeDiv.classList.remove('hidden');
+                        senderAnswerSection.classList.remove('hidden');
+                    }
+                };
+
+            } catch (error) {
+                console.error("Error sharing screen:", error);
+                status.textContent = `Error: ${error.message}`;
+            }
+        };
+        
+        connectBtn.onclick = async () => {
+            try {
+                if (!answerInput.value) {
+                    throw new Error("Answer field is empty.");
+                }
+                const answer = JSON.parse(answerInput.value);
+                status.textContent = "Connecting...";
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            } catch (error) {
+                console.error("Error setting remote description:", error);
+                status.textContent = `Error: Invalid answer format.`;
+            }
+        };
+
+        // --- Receiver Logic ---
+        createAnswerBtn.onclick = async () => {
+            try {
+                 if (!offerInput.value) {
+                    throw new Error("Offer field is empty.");
+                }
+                status.textContent = "Creating answer...";
+                setupPeerConnection();
+                
+                const offer = JSON.parse(offerInput.value);
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                peerConnection.onicegatheringstatechange = () => {
+                    if (peerConnection.iceGatheringState === 'complete') {
+                        status.textContent = "Answer created. Copy it to the sender.";
+                        answerOutput.value = JSON.stringify(peerConnection.localDescription);
+                        receiverAnswerSection.classList.remove('hidden');
+                    }
+                };
+
+            } catch (error) {
+                console.error("Error creating answer:", error);
+                status.textContent = `Error: Invalid offer format.`;
+            }
+        };
+        
+        // --- Common PeerConnection Logic ---
+        function setupPeerConnection() {
+            peerConnection = new RTCPeerConnection(configuration);
+
+            peerConnection.onicecandidate = event => {
+                // This event fires when a new ICE candidate is found.
+                // For this PoC, we wait for gathering to be complete, which includes all candidates in the SDP.
+            };
+            
+            peerConnection.ontrack = event => {
+                status.textContent = "Stream received!";
+                videoPlayer.srcObject = event.streams[0];
+                videoPlayer.muted = false;
+            };
+
+            peerConnection.onconnectionstatechange = () => {
+                status.textContent = `Connection state: ${peerConnection.connectionState}`;
+                if(peerConnection.connectionState === 'connected') {
+                    // Hide all setup views once connected
+                    senderView.classList.add('hidden');
+                    receiverView.classList.add('hidden');
+                }
+            };
+        }
+    </script>
+</body>
+</html>
