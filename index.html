@@ -33,25 +33,29 @@
             transition: all 0.2s ease-in-out;
             cursor: pointer;
         }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
         .btn-primary {
             background-color: #3b82f6;
             color: white;
         }
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             background-color: #2563eb;
         }
         .btn-secondary {
             background-color: #4b5563;
             color: white;
         }
-        .btn-secondary:hover {
+        .btn-secondary:hover:not(:disabled) {
             background-color: #374151;
         }
         .btn-danger {
             background-color: #ef4444;
             color: white;
         }
-        .btn-danger:hover {
+        .btn-danger:hover:not(:disabled) {
             background-color: #dc2626;
         }
         textarea {
@@ -117,42 +121,41 @@
                 </div>
             </div>
 
-            <!-- Sender View -->
+            <!-- Sender View (Phone) -->
             <div id="senderView" class="hidden space-y-6">
-                <div>
-                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Generate Offer on Phone</h2>
-                    <p class="text-gray-400 ml-12 mb-4">Click to start sharing your screen. A QR code will appear.</p>
-                    <button id="shareScreenBtn" class="btn btn-primary ml-12">Start Sharing</button>
-                    <div id="offerQrCode" class="hidden">
-                         <div id="qrcode"></div>
-                         <p class="text-center text-sm text-gray-400 mt-2">Go to the Receiver/PS4 and follow Step 1 there.</p>
-                    </div>
+                 <div>
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Paste Offer from PS4</h2>
+                    <p class="text-gray-400 ml-12 mb-4">Scan the QR code on the PS4 screen. Copy the text from the QR code and paste it into the box below.</p>
+                    <textarea id="offerInput" placeholder="Paste offer from PS4 here..."></textarea>
+                    <button id="createAnswerBtn" class="btn btn-primary mt-2 ml-12" disabled>Start Sharing & Create Answer</button>
                 </div>
                 
                 <div id="senderAnswerSection" class="hidden">
-                    <h2 class="text-xl font-semibold flex items-center"><span class="step">2</span>Paste Answer from PS4</h2>
-                    <p class="text-gray-400 ml-12 mb-4">After completing Step 2 on the receiver, paste the generated "Answer" text here to connect.</p>
-                    <textarea id="answerInput" placeholder="Paste answer from receiver here..."></textarea>
-                    <button id="connectBtn" class="btn btn-primary mt-2 ml-12">Connect</button>
-                </div>
-            </div>
-
-            <!-- Receiver View -->
-            <div id="receiverView" class="hidden space-y-6">
-                 <div>
-                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Paste Offer from Phone</h2>
-                    <p class="text-gray-400 ml-12 mb-4">Scan the QR code on the phone screen. Copy the text from the QR code and paste it into the box below.</p>
-                    <textarea id="offerInput" placeholder="Paste offer from sender here..."></textarea>
-                    <button id="createAnswerBtn" class="btn btn-primary mt-2 ml-12">Create Answer</button>
-                </div>
-                
-                <div id="receiverAnswerSection" class="hidden">
                     <h2 class="text-xl font-semibold flex items-center"><span class="step">2</span>Copy & Share This Answer</h2>
-                    <p class="text-gray-400 ml-12 mb-4">Click the copy button and paste this text into the sender's device (your phone) to complete the connection.</p>
+                    <p class="text-gray-400 ml-12 mb-4">Click the copy button and paste this text back into the PS4 to complete the connection.</p>
                     <div class="relative">
                         <textarea id="answerOutput" readonly></textarea>
                         <button id="copyAnswerBtn" class="absolute top-2 right-2 btn btn-secondary text-sm py-1 px-2">Copy</button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Receiver View (PS4) -->
+            <div id="receiverView" class="hidden space-y-6">
+                <div>
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Scan QR Code on Phone</h2>
+                    <p class="text-gray-400 ml-12 mb-4">A QR code with connection details will appear below. Scan it with your phone.</p>
+                    <div id="offerQrCode">
+                         <div id="qrcode"><p class="text-gray-600">Generating QR Code...</p></div>
+                         <p class="text-center text-sm text-gray-400 mt-2">Go to your Phone and follow Step 1 there.</p>
+                    </div>
+                </div>
+                
+                <div id="receiverAnswerSection" class="hidden">
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">2</span>Paste Answer from Phone</h2>
+                    <p class="text-gray-400 ml-12 mb-4">After completing Step 2 on your phone, paste the generated "Answer" text here to connect.</p>
+                    <textarea id="answerInput" placeholder="Paste answer from phone here..."></textarea>
+                    <button id="connectBtn" class="btn btn-primary mt-2 ml-12">Connect</button>
                 </div>
             </div>
             
@@ -166,6 +169,7 @@
     </div>
 
     <script>
+        // --- Element Definitions ---
         const initialView = document.getElementById('initialView');
         const senderView = document.getElementById('senderView');
         const receiverView = document.getElementById('receiverView');
@@ -173,19 +177,21 @@
         const startReceiverBtn = document.getElementById('startReceiver');
         const resetBtn = document.getElementById('resetBtn');
         
-        const shareScreenBtn = document.getElementById('shareScreenBtn');
-        const offerQrCodeDiv = document.getElementById('offerQrCode');
-        const qrcodeContainer = document.getElementById('qrcode');
-        const senderAnswerSection = document.getElementById('senderAnswerSection');
-        const answerInput = document.getElementById('answerInput');
-        const connectBtn = document.getElementById('connectBtn');
-        
+        // Sender (Phone) Elements
         const offerInput = document.getElementById('offerInput');
         const createAnswerBtn = document.getElementById('createAnswerBtn');
-        const receiverAnswerSection = document.getElementById('receiverAnswerSection');
+        const senderAnswerSection = document.getElementById('senderAnswerSection');
         const answerOutput = document.getElementById('answerOutput');
         const copyAnswerBtn = document.getElementById('copyAnswerBtn');
         
+        // Receiver (PS4) Elements
+        const offerQrCodeDiv = document.getElementById('offerQrCode');
+        const qrcodeContainer = document.getElementById('qrcode');
+        const receiverAnswerSection = document.getElementById('receiverAnswerSection');
+        const answerInput = document.getElementById('answerInput');
+        const connectBtn = document.getElementById('connectBtn');
+        
+        // Common Elements
         const videoPlayer = document.getElementById('videoPlayer');
         const status = document.getElementById('status');
 
@@ -195,6 +201,7 @@
             iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         };
 
+        // --- Core Functions ---
         function resetState() {
             if (peerConnection) {
                 peerConnection.close();
@@ -209,7 +216,6 @@
             senderView.classList.add('hidden');
             receiverView.classList.add('hidden');
             videoPlayer.classList.add('hidden');
-            offerQrCodeDiv.classList.add('hidden');
             senderAnswerSection.classList.add('hidden');
             receiverAnswerSection.classList.add('hidden');
             resetBtn.classList.add('hidden');
@@ -220,49 +226,80 @@
             qrcodeContainer.innerHTML = '';
             videoPlayer.srcObject = null;
             status.textContent = '';
+            
+            createAnswerBtn.disabled = true;
         }
 
         resetBtn.onclick = resetState;
 
+        // --- Event Listeners ---
+        offerInput.addEventListener('input', () => {
+            createAnswerBtn.disabled = offerInput.value.trim() === '';
+        });
+
+        // --- Role Selection ---
         startSenderBtn.onclick = () => {
             initialView.classList.add('hidden');
             senderView.classList.remove('hidden');
             resetBtn.classList.remove('hidden');
+            videoPlayer.classList.remove('hidden'); // Show local video preview
             status.textContent = "Ready to share screen.";
         };
 
-        startReceiverBtn.onclick = () => {
+        startReceiverBtn.onclick = async () => {
             initialView.classList.add('hidden');
             receiverView.classList.remove('hidden');
             resetBtn.classList.remove('hidden');
             videoPlayer.classList.remove('hidden');
-            status.textContent = "Ready to receive stream.";
+            status.textContent = "Ready to receive stream. Creating offer...";
+            try {
+                setupPeerConnection('receiver');
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+            } catch (error) {
+                 console.error("Error creating offer:", error);
+                status.textContent = `Error: ${error.message}`;
+                resetState();
+            }
         };
 
-        shareScreenBtn.onclick = async () => {
+        // --- Sender (Phone) Logic ---
+        createAnswerBtn.onclick = async () => {
             try {
+                 if (!offerInput.value) {
+                    // This check is now mostly redundant due to the button being disabled, but it's good for safety.
+                    throw new Error("Offer field is empty. Please paste the offer from the PS4.");
+                }
                 status.textContent = "Requesting screen access...";
                 localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                videoPlayer.classList.remove('hidden');
                 videoPlayer.srcObject = localStream;
                 videoPlayer.muted = true;
-                
-                status.textContent = "Creating connection offer...";
+
+                status.textContent = "Creating answer...";
                 setupPeerConnection('sender');
                 
                 localStream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, localStream);
                 });
-                
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
+
+                const offer = JSON.parse(offerInput.value);
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
             } catch (error) {
-                console.error("Error sharing screen:", error);
+                console.error("Error creating answer:", error);
                 status.textContent = `Error: ${error.message}`;
-                resetState();
             }
         };
-        
+
+        copyAnswerBtn.onclick = () => {
+            answerOutput.select();
+            document.execCommand('copy');
+            status.textContent = "Answer copied to clipboard!";
+        };
+
+        // --- Receiver (PS4) Logic ---
         connectBtn.onclick = async () => {
             try {
                 if (!answerInput.value) {
@@ -277,48 +314,23 @@
             }
         };
 
-        createAnswerBtn.onclick = async () => {
-            try {
-                 if (!offerInput.value) {
-                    throw new Error("Offer field is empty.");
-                }
-                status.textContent = "Creating answer...";
-                setupPeerConnection('receiver');
-                
-                const offer = JSON.parse(offerInput.value);
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-            } catch (error) {
-                console.error("Error creating answer:", error);
-                status.textContent = `Error: Invalid offer format.`;
-            }
-        };
-
-        copyAnswerBtn.onclick = () => {
-            answerOutput.select();
-            document.execCommand('copy');
-            status.textContent = "Answer copied to clipboard!";
-        };
-        
+        // --- Common PeerConnection Logic ---
         function setupPeerConnection(role) {
             peerConnection = new RTCPeerConnection(configuration);
 
             peerConnection.onicecandidate = event => {
-                if (event.candidate === null) {
-                    if (role === 'sender') {
-                        status.textContent = "Offer created. Scan QR code on Receiver.";
+                if (event.candidate === null) { // ICE gathering is complete
+                    if (role === 'receiver') {
+                        status.textContent = "Offer created. Scan QR code on your Phone.";
                         const offerSdp = JSON.stringify(peerConnection.localDescription);
                         
                         qrcodeContainer.innerHTML = "";
                         new QRCode(qrcodeContainer, { text: offerSdp, width: 256, height: 256 });
-                        offerQrCodeDiv.classList.remove('hidden');
-                        senderAnswerSection.classList.remove('hidden');
-                    } else if (role === 'receiver') {
-                        status.textContent = "Answer created. Copy it to the sender.";
-                        answerOutput.value = JSON.stringify(peerConnection.localDescription);
                         receiverAnswerSection.classList.remove('hidden');
+                    } else if (role === 'sender') {
+                        status.textContent = "Answer created. Copy it to the PS4.";
+                        answerOutput.value = JSON.stringify(peerConnection.localDescription);
+                        senderAnswerSection.classList.remove('hidden');
                     }
                 }
             };
