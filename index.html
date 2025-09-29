@@ -204,7 +204,7 @@
                 videoPlayer.muted = true;
                 
                 status.textContent = "Creating connection offer...";
-                setupPeerConnection();
+                setupPeerConnection('sender');
                 
                 localStream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, localStream);
@@ -212,25 +212,7 @@
                 
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
-
-                peerConnection.onicegatheringstatechange = () => {
-                    if (peerConnection.iceGatheringState === 'complete') {
-                        status.textContent = "Offer created. Scan QR code.";
-                        const offerSdp = JSON.stringify(peerConnection.localDescription);
-                        
-                        qrcodeContainer.innerHTML = ""; // Clear previous QR code
-                        new QRCode(qrcodeContainer, {
-                            text: offerSdp,
-                            width: 256,
-                            height: 256,
-                            colorDark : "#000000",
-                            colorLight : "#ffffff",
-                            correctLevel : QRCode.CorrectLevel.H
-                        });
-                        offerQrCodeDiv.classList.remove('hidden');
-                        senderAnswerSection.classList.remove('hidden');
-                    }
-                };
+                // QR code generation is now handled by the onicecandidate event in setupPeerConnection
 
             } catch (error) {
                 console.error("Error sharing screen:", error);
@@ -259,21 +241,14 @@
                     throw new Error("Offer field is empty.");
                 }
                 status.textContent = "Creating answer...";
-                setupPeerConnection();
+                setupPeerConnection('receiver');
                 
                 const offer = JSON.parse(offerInput.value);
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
 
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
-
-                peerConnection.onicegatheringstatechange = () => {
-                    if (peerConnection.iceGatheringState === 'complete') {
-                        status.textContent = "Answer created. Copy it to the sender.";
-                        answerOutput.value = JSON.stringify(peerConnection.localDescription);
-                        receiverAnswerSection.classList.remove('hidden');
-                    }
-                };
+                // Answer text generation is now handled by the onicecandidate event in setupPeerConnection
 
             } catch (error) {
                 console.error("Error creating answer:", error);
@@ -282,12 +257,34 @@
         };
         
         // --- Common PeerConnection Logic ---
-        function setupPeerConnection() {
+        function setupPeerConnection(role) {
             peerConnection = new RTCPeerConnection(configuration);
 
+            // This event fires when a new ICE candidate is found.
+            // When event.candidate is null, it means ICE gathering is complete.
             peerConnection.onicecandidate = event => {
-                // This event fires when a new ICE candidate is found.
-                // For this PoC, we wait for gathering to be complete, which includes all candidates in the SDP.
+                if (event.candidate === null) {
+                    if (role === 'sender') {
+                        status.textContent = "Offer created. Scan QR code.";
+                        const offerSdp = JSON.stringify(peerConnection.localDescription);
+                        
+                        qrcodeContainer.innerHTML = ""; // Clear previous QR code
+                        new QRCode(qrcodeContainer, {
+                            text: offerSdp,
+                            width: 256,
+                            height: 256,
+                            colorDark : "#000000",
+                            colorLight : "#ffffff",
+                            correctLevel : QRCode.CorrectLevel.H
+                        });
+                        offerQrCodeDiv.classList.remove('hidden');
+                        senderAnswerSection.classList.remove('hidden');
+                    } else if (role === 'receiver') {
+                        status.textContent = "Answer created. Copy it to the sender.";
+                        answerOutput.value = JSON.stringify(peerConnection.localDescription);
+                        receiverAnswerSection.classList.remove('hidden');
+                    }
+                }
             };
             
             peerConnection.ontrack = event => {
@@ -308,3 +305,4 @@
     </script>
 </body>
 </html>
+
