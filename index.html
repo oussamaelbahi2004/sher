@@ -116,7 +116,7 @@
             <div id="initialView" class="text-center space-y-4">
                 <p>Choose your role for this device:</p>
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <button id="startSender" class="btn btn-primary">📱 Share Screen (Phone)</button>
+                    <button id="startSender" class="btn btn-primary">📱 Share Video (Phone)</button>
                     <button id="startReceiver" class="btn btn-secondary">🎮 Receive Stream (PS4)</button>
                 </div>
             </div>
@@ -127,7 +127,10 @@
                     <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Paste Offer from PS4</h2>
                     <p class="text-gray-400 ml-12 mb-4">Scan the QR code on the PS4 screen. Copy the text from the QR code and paste it into the box below.</p>
                     <textarea id="offerInput" placeholder="Paste offer from PS4 here..."></textarea>
-                    <button id="createAnswerBtn" class="btn btn-primary mt-2 ml-12" disabled>Start Sharing & Create Answer</button>
+                    <div class="ml-12 mt-2 flex flex-wrap gap-2">
+                        <button id="createAnswerBtn" class="btn btn-primary" disabled>Share Screen & Create Answer</button>
+                        <button id="createCameraAnswerBtn" class="btn btn-secondary" disabled>Share Camera & Create Answer</button>
+                    </div>
                     <p class="text-sm text-center text-gray-500 mt-4">Note: The QR code is shown on the Receiver (PS4) screen, not on this device.</p>
                 </div>
                 
@@ -181,6 +184,7 @@
         // Sender (Phone) Elements
         const offerInput = document.getElementById('offerInput');
         const createAnswerBtn = document.getElementById('createAnswerBtn');
+        const createCameraAnswerBtn = document.getElementById('createCameraAnswerBtn');
         const senderAnswerSection = document.getElementById('senderAnswerSection');
         const answerOutput = document.getElementById('answerOutput');
         const copyAnswerBtn = document.getElementById('copyAnswerBtn');
@@ -229,13 +233,16 @@
             status.textContent = '';
             
             createAnswerBtn.disabled = true;
+            createCameraAnswerBtn.disabled = true;
         }
 
         resetBtn.onclick = resetState;
 
         // --- Event Listeners ---
         offerInput.addEventListener('input', () => {
-            createAnswerBtn.disabled = offerInput.value.trim() === '';
+            const hasText = offerInput.value.trim() !== '';
+            createAnswerBtn.disabled = !hasText;
+            createCameraAnswerBtn.disabled = !hasText;
         });
 
         // --- Role Selection ---
@@ -244,7 +251,7 @@
             senderView.classList.remove('hidden');
             resetBtn.classList.remove('hidden');
             videoPlayer.classList.remove('hidden'); // Show local video preview
-            status.textContent = "Ready to share screen.";
+            status.textContent = "Ready to share video.";
         };
 
         startReceiverBtn.onclick = async () => {
@@ -271,48 +278,66 @@
                 resetState();
             }
         };
-
-        // --- Sender (Phone) Logic ---
-        createAnswerBtn.onclick = async () => {
-            try {
+        
+        // --- Refactored Sender Logic ---
+        const startStreaming = async (streamType) => {
+             try {
                  if (!offerInput.value) {
                     throw new Error("Offer field is empty. Please paste the offer from the PS4.");
                 }
-                status.textContent = "Requesting screen access... Please approve the prompt.";
+                status.textContent = `Requesting ${streamType} access... Please approve the prompt.`;
 
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                    throw new Error("Your browser does not support screen sharing. This is common on mobile browsers (especially iOS). Try the latest Chrome on Android or a desktop browser.");
-                }
-                
-                try {
-                    localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-                } catch (err) {
-                    console.error("getDisplayMedia error:", err);
-                    let errorMessage = "Could not start screen sharing. ";
-                    if (err.name === 'NotAllowedError') {
-                        // **FIX**: Make the check case-insensitive to correctly identify the policy error.
-                        if (err.message.toLowerCase().includes('permissions policy')) {
-                             errorMessage += "The environment (like this preview iframe) is blocking screen capture due to its security policy. Please try running this file on a standalone local server.";
-                        } else {
-                            errorMessage += "You denied the screen sharing permission.";
-                        }
-                    } else {
-                         errorMessage += "An unknown error occurred. Please ensure you are on a secure connection (https:// or localhost).";
+                // Get the media stream (screen or camera)
+                if (streamType === 'screen') {
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                        throw new Error("Your browser does not support screen sharing. Try sharing your camera instead.");
                     }
-                    throw new Error(errorMessage);
+                    try {
+                        localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                    } catch (err) {
+                        console.error("getDisplayMedia error:", err);
+                        let errorMessage = "Could not start screen sharing. ";
+                        if (err.name === 'NotAllowedError') {
+                             errorMessage += "You denied the screen sharing permission.";
+                        } else {
+                            errorMessage += "An unknown error occurred.";
+                        }
+                        throw new Error(errorMessage);
+                    }
+                } else { // 'camera'
+                     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        throw new Error("Your browser does not support camera access.");
+                    }
+                     try {
+                        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    } catch (err) {
+                        console.error("getUserMedia error:", err);
+                        let errorMessage = "Could not start camera. ";
+                        if (err.name === 'NotAllowedError') {
+                             errorMessage += "You denied camera/microphone permission.";
+                        } else {
+                            errorMessage += "Is your camera already in use?";
+                        }
+                        throw new Error(errorMessage);
+                    }
                 }
 
                 videoPlayer.srcObject = localStream;
                 videoPlayer.muted = true;
 
-                status.textContent = "Screen captured. Creating answer...";
+                status.textContent = "Stream captured. Creating answer...";
                 setupPeerConnection('sender');
                 
                 localStream.getTracks().forEach(track => {
                     peerConnection.addTrack(track, localStream);
                 });
 
-                const offer = JSON.parse(offerInput.value);
+                let offer;
+                try {
+                    offer = JSON.parse(offerInput.value.trim());
+                } catch (e) {
+                    throw new Error("Invalid offer format. Please re-scan the QR code and paste the full text.");
+                }
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
 
                 const answer = await peerConnection.createAnswer();
@@ -326,6 +351,9 @@
             }
         };
 
+        createAnswerBtn.onclick = () => startStreaming('screen');
+        createCameraAnswerBtn.onclick = () => startStreaming('camera');
+
         copyAnswerBtn.onclick = () => {
             answerOutput.select();
             document.execCommand('copy');
@@ -338,12 +366,17 @@
                 if (!answerInput.value) {
                     throw new Error("Answer field is empty.");
                 }
-                const answer = JSON.parse(answerInput.value);
+                let answer;
+                try {
+                    answer = JSON.parse(answerInput.value.trim());
+                } catch(e) {
+                     throw new Error("Invalid answer format. Please copy and paste the answer text again.");
+                }
                 status.textContent = "Connecting...";
                 await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
             } catch (error) {
                 console.error("Error setting remote description:", error);
-                status.textContent = `Error: Invalid answer format.`;
+                status.textContent = `Error: ${error.message}`;
             }
         };
 
