@@ -47,6 +47,13 @@
         .btn-secondary:hover {
             background-color: #374151;
         }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
         textarea {
             background-color: #1e1e1e;
             color: #d4d4d4;
@@ -95,7 +102,10 @@
 <body>
     <div class="container">
         <div class="card">
-            <h1 class="text-3xl font-bold text-center mb-2">Local Screen Share</h1>
+            <div class="flex justify-between items-center mb-2">
+                <h1 class="text-3xl font-bold text-center">Local Screen Share</h1>
+                <button id="resetBtn" class="btn btn-danger hidden">Start Over</button>
+            </div>
             <p class="text-center text-gray-400 mb-6">PWA PoC for Phone → PS4</p>
             
             <!-- Initial View -->
@@ -110,18 +120,18 @@
             <!-- Sender View -->
             <div id="senderView" class="hidden space-y-6">
                 <div>
-                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Generate Connection Offer</h2>
-                    <p class="text-gray-400 ml-12 mb-4">Click the button to start sharing your screen and generate a QR code with connection details.</p>
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Generate Offer on Phone</h2>
+                    <p class="text-gray-400 ml-12 mb-4">Click to start sharing your screen. A QR code will appear.</p>
                     <button id="shareScreenBtn" class="btn btn-primary ml-12">Start Sharing</button>
                     <div id="offerQrCode" class="hidden">
                          <div id="qrcode"></div>
-                         <p class="text-center text-sm text-gray-400 mt-2">Scan this on the receiver device.</p>
+                         <p class="text-center text-sm text-gray-400 mt-2">Go to the Receiver/PS4 and follow Step 1 there.</p>
                     </div>
                 </div>
                 
                 <div id="senderAnswerSection" class="hidden">
-                    <h2 class="text-xl font-semibold flex items-center"><span class="step">2</span>Paste Receiver's Answer</h2>
-                    <p class="text-gray-400 ml-12 mb-4">Once the receiver generates an "Answer", paste it here to establish the connection.</p>
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">2</span>Paste Answer from PS4</h2>
+                    <p class="text-gray-400 ml-12 mb-4">After completing Step 2 on the receiver, paste the generated "Answer" text here to connect.</p>
                     <textarea id="answerInput" placeholder="Paste answer from receiver here..."></textarea>
                     <button id="connectBtn" class="btn btn-primary mt-2 ml-12">Connect</button>
                 </div>
@@ -130,16 +140,19 @@
             <!-- Receiver View -->
             <div id="receiverView" class="hidden space-y-6">
                  <div>
-                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Paste Sender's Offer</h2>
-                    <p class="text-gray-400 ml-12 mb-4">Use your phone to scan the QR code on the sender's screen, copy the text, and paste it below.</p>
+                    <h2 class="text-xl font-semibold flex items-center"><span class="step">1</span>Paste Offer from Phone</h2>
+                    <p class="text-gray-400 ml-12 mb-4">Scan the QR code on the phone screen. Copy the text from the QR code and paste it into the box below.</p>
                     <textarea id="offerInput" placeholder="Paste offer from sender here..."></textarea>
                     <button id="createAnswerBtn" class="btn btn-primary mt-2 ml-12">Create Answer</button>
                 </div>
                 
                 <div id="receiverAnswerSection" class="hidden">
                     <h2 class="text-xl font-semibold flex items-center"><span class="step">2</span>Copy & Share This Answer</h2>
-                    <p class="text-gray-400 ml-12 mb-4">Copy the text below and paste it into the sender's device to complete the connection.</p>
-                    <textarea id="answerOutput" readonly></textarea>
+                    <p class="text-gray-400 ml-12 mb-4">Click the copy button and paste this text into the sender's device (your phone) to complete the connection.</p>
+                    <div class="relative">
+                        <textarea id="answerOutput" readonly></textarea>
+                        <button id="copyAnswerBtn" class="absolute top-2 right-2 btn btn-secondary text-sm py-1 px-2">Copy</button>
+                    </div>
                 </div>
             </div>
             
@@ -158,6 +171,7 @@
         const receiverView = document.getElementById('receiverView');
         const startSenderBtn = document.getElementById('startSender');
         const startReceiverBtn = document.getElementById('startReceiver');
+        const resetBtn = document.getElementById('resetBtn');
         
         const shareScreenBtn = document.getElementById('shareScreenBtn');
         const offerQrCodeDiv = document.getElementById('offerQrCode');
@@ -170,6 +184,7 @@
         const createAnswerBtn = document.getElementById('createAnswerBtn');
         const receiverAnswerSection = document.getElementById('receiverAnswerSection');
         const answerOutput = document.getElementById('answerOutput');
+        const copyAnswerBtn = document.getElementById('copyAnswerBtn');
         
         const videoPlayer = document.getElementById('videoPlayer');
         const status = document.getElementById('status');
@@ -177,24 +192,53 @@
         let peerConnection;
         let localStream;
         const configuration = {
-            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] // Using a public STUN server
+            iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
         };
 
-        // --- Role Selection ---
+        function resetState() {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+
+            initialView.classList.remove('hidden');
+            senderView.classList.add('hidden');
+            receiverView.classList.add('hidden');
+            videoPlayer.classList.add('hidden');
+            offerQrCodeDiv.classList.add('hidden');
+            senderAnswerSection.classList.add('hidden');
+            receiverAnswerSection.classList.add('hidden');
+            resetBtn.classList.add('hidden');
+
+            answerInput.value = '';
+            offerInput.value = '';
+            answerOutput.value = '';
+            qrcodeContainer.innerHTML = '';
+            videoPlayer.srcObject = null;
+            status.textContent = '';
+        }
+
+        resetBtn.onclick = resetState;
+
         startSenderBtn.onclick = () => {
             initialView.classList.add('hidden');
             senderView.classList.remove('hidden');
+            resetBtn.classList.remove('hidden');
             status.textContent = "Ready to share screen.";
         };
 
         startReceiverBtn.onclick = () => {
             initialView.classList.add('hidden');
             receiverView.classList.remove('hidden');
+            resetBtn.classList.remove('hidden');
             videoPlayer.classList.remove('hidden');
             status.textContent = "Ready to receive stream.";
         };
 
-        // --- Sender Logic ---
         shareScreenBtn.onclick = async () => {
             try {
                 status.textContent = "Requesting screen access...";
@@ -212,11 +256,10 @@
                 
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
-                // QR code generation is now handled by the onicecandidate event in setupPeerConnection
-
             } catch (error) {
                 console.error("Error sharing screen:", error);
                 status.textContent = `Error: ${error.message}`;
+                resetState();
             }
         };
         
@@ -234,7 +277,6 @@
             }
         };
 
-        // --- Receiver Logic ---
         createAnswerBtn.onclick = async () => {
             try {
                  if (!offerInput.value) {
@@ -248,35 +290,29 @@
 
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
-                // Answer text generation is now handled by the onicecandidate event in setupPeerConnection
-
             } catch (error) {
                 console.error("Error creating answer:", error);
                 status.textContent = `Error: Invalid offer format.`;
             }
         };
+
+        copyAnswerBtn.onclick = () => {
+            answerOutput.select();
+            document.execCommand('copy');
+            status.textContent = "Answer copied to clipboard!";
+        };
         
-        // --- Common PeerConnection Logic ---
         function setupPeerConnection(role) {
             peerConnection = new RTCPeerConnection(configuration);
 
-            // This event fires when a new ICE candidate is found.
-            // When event.candidate is null, it means ICE gathering is complete.
             peerConnection.onicecandidate = event => {
                 if (event.candidate === null) {
                     if (role === 'sender') {
-                        status.textContent = "Offer created. Scan QR code.";
+                        status.textContent = "Offer created. Scan QR code on Receiver.";
                         const offerSdp = JSON.stringify(peerConnection.localDescription);
                         
-                        qrcodeContainer.innerHTML = ""; // Clear previous QR code
-                        new QRCode(qrcodeContainer, {
-                            text: offerSdp,
-                            width: 256,
-                            height: 256,
-                            colorDark : "#000000",
-                            colorLight : "#ffffff",
-                            correctLevel : QRCode.CorrectLevel.H
-                        });
+                        qrcodeContainer.innerHTML = "";
+                        new QRCode(qrcodeContainer, { text: offerSdp, width: 256, height: 256 });
                         offerQrCodeDiv.classList.remove('hidden');
                         senderAnswerSection.classList.remove('hidden');
                     } else if (role === 'receiver') {
@@ -294,11 +330,14 @@
             };
 
             peerConnection.onconnectionstatechange = () => {
-                status.textContent = `Connection state: ${peerConnection.connectionState}`;
-                if(peerConnection.connectionState === 'connected') {
-                    // Hide all setup views once connected
+                const state = peerConnection.connectionState;
+                status.textContent = `Connection state: ${state}`;
+                if (state === 'connected') {
                     senderView.classList.add('hidden');
                     receiverView.classList.add('hidden');
+                }
+                if (state === 'failed' || state === 'disconnected' || state === 'closed') {
+                    setTimeout(resetState, 2000);
                 }
             };
         }
