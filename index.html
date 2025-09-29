@@ -128,6 +128,7 @@
                     <p class="text-gray-400 ml-12 mb-4">Scan the QR code on the PS4 screen. Copy the text from the QR code and paste it into the box below.</p>
                     <textarea id="offerInput" placeholder="Paste offer from PS4 here..."></textarea>
                     <button id="createAnswerBtn" class="btn btn-primary mt-2 ml-12" disabled>Start Sharing & Create Answer</button>
+                    <p class="text-sm text-center text-gray-500 mt-4">Note: The QR code is shown on the Receiver (PS4) screen, not on this device.</p>
                 </div>
                 
                 <div id="senderAnswerSection" class="hidden">
@@ -223,7 +224,7 @@
             answerInput.value = '';
             offerInput.value = '';
             answerOutput.value = '';
-            qrcodeContainer.innerHTML = '';
+            qrcodeContainer.innerHTML = '<p class="text-gray-600">Generating QR Code...</p>';
             videoPlayer.srcObject = null;
             status.textContent = '';
             
@@ -256,6 +257,16 @@
                 setupPeerConnection('receiver');
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
+                
+                // **FIX**: Generate QR code immediately after setting local description,
+                // instead of waiting for the `onicecandidate` event which may not fire correctly.
+                status.textContent = "Offer created. Scan QR code on your Phone.";
+                const offerSdp = JSON.stringify(peerConnection.localDescription);
+                
+                qrcodeContainer.innerHTML = ""; // Clear placeholder
+                new QRCode(qrcodeContainer, { text: offerSdp, width: 256, height: 256 });
+                receiverAnswerSection.classList.remove('hidden');
+
             } catch (error) {
                  console.error("Error creating offer:", error);
                 status.textContent = `Error: ${error.message}`;
@@ -267,15 +278,31 @@
         createAnswerBtn.onclick = async () => {
             try {
                  if (!offerInput.value) {
-                    // This check is now mostly redundant due to the button being disabled, but it's good for safety.
                     throw new Error("Offer field is empty. Please paste the offer from the PS4.");
                 }
-                status.textContent = "Requesting screen access...";
-                localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                status.textContent = "Requesting screen access... Please approve the prompt.";
+
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+                    throw new Error("Your browser does not support screen sharing (getDisplayMedia API is not available).");
+                }
+                
+                try {
+                    localStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+                } catch (err) {
+                    console.error("getDisplayMedia error:", err);
+                    let errorMessage = "Could not start screen sharing. ";
+                    if (err.name === 'NotAllowedError') {
+                        errorMessage += "You denied the screen sharing permission.";
+                    } else {
+                         errorMessage += "Please ensure you are on a secure connection (https:// or localhost) and try again.";
+                    }
+                    throw new Error(errorMessage);
+                }
+
                 videoPlayer.srcObject = localStream;
                 videoPlayer.muted = true;
 
-                status.textContent = "Creating answer...";
+                status.textContent = "Screen captured. Creating answer...";
                 setupPeerConnection('sender');
                 
                 localStream.getTracks().forEach(track => {
@@ -290,6 +317,9 @@
             } catch (error) {
                 console.error("Error creating answer:", error);
                 status.textContent = `Error: ${error.message}`;
+                if(localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                }
             }
         };
 
@@ -319,15 +349,11 @@
             peerConnection = new RTCPeerConnection(configuration);
 
             peerConnection.onicecandidate = event => {
-                if (event.candidate === null) { // ICE gathering is complete
-                    if (role === 'receiver') {
-                        status.textContent = "Offer created. Scan QR code on your Phone.";
-                        const offerSdp = JSON.stringify(peerConnection.localDescription);
-                        
-                        qrcodeContainer.innerHTML = "";
-                        new QRCode(qrcodeContainer, { text: offerSdp, width: 256, height: 256 });
-                        receiverAnswerSection.classList.remove('hidden');
-                    } else if (role === 'sender') {
+                // The 'null' candidate indicates that ICE gathering is complete.
+                if (event.candidate === null) {
+                    // **FIX**: The QR code generation for the receiver has been moved out of this handler
+                    // to prevent it from getting stuck. This handler is now only for the sender's answer.
+                    if (role === 'sender') {
                         status.textContent = "Answer created. Copy it to the PS4.";
                         answerOutput.value = JSON.stringify(peerConnection.localDescription);
                         senderAnswerSection.classList.remove('hidden');
