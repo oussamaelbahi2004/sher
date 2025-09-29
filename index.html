@@ -258,8 +258,6 @@
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
                 
-                // **FIX**: Generate QR code immediately after setting local description,
-                // instead of waiting for the `onicecandidate` event which may not fire correctly.
                 status.textContent = "Offer created. Scan QR code on your Phone.";
                 const offerSdp = JSON.stringify(peerConnection.localDescription);
                 
@@ -283,7 +281,7 @@
                 status.textContent = "Requesting screen access... Please approve the prompt.";
 
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-                    throw new Error("Your browser does not support screen sharing (getDisplayMedia API is not available).");
+                    throw new Error("Your browser does not support screen sharing. This is common on mobile browsers (especially iOS). Try the latest Chrome on Android or a desktop browser.");
                 }
                 
                 try {
@@ -292,9 +290,14 @@
                     console.error("getDisplayMedia error:", err);
                     let errorMessage = "Could not start screen sharing. ";
                     if (err.name === 'NotAllowedError') {
-                        errorMessage += "You denied the screen sharing permission.";
+                        // **FIX**: Make the check case-insensitive to correctly identify the policy error.
+                        if (err.message.toLowerCase().includes('permissions policy')) {
+                             errorMessage += "The environment (like this preview iframe) is blocking screen capture due to its security policy. Please try running this file on a standalone local server.";
+                        } else {
+                            errorMessage += "You denied the screen sharing permission.";
+                        }
                     } else {
-                         errorMessage += "Please ensure you are on a secure connection (https:// or localhost) and try again.";
+                         errorMessage += "An unknown error occurred. Please ensure you are on a secure connection (https:// or localhost).";
                     }
                     throw new Error(errorMessage);
                 }
@@ -349,10 +352,7 @@
             peerConnection = new RTCPeerConnection(configuration);
 
             peerConnection.onicecandidate = event => {
-                // The 'null' candidate indicates that ICE gathering is complete.
                 if (event.candidate === null) {
-                    // **FIX**: The QR code generation for the receiver has been moved out of this handler
-                    // to prevent it from getting stuck. This handler is now only for the sender's answer.
                     if (role === 'sender') {
                         status.textContent = "Answer created. Copy it to the PS4.";
                         answerOutput.value = JSON.stringify(peerConnection.localDescription);
