@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تمارين تطبيقية - علوم التربية (بدون حرق)</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f3f4f6; margin: 0; padding: 15px; color: #333; }
+        .container { max-width: 800px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); padding: 20px; }
+        
+        /* شريط التقدم */
+        .progress-container { background: #e0e0e0; height: 8px; border-radius: 5px; margin-bottom: 20px; overflow: hidden; }
+        .progress-bar { height: 100%; background: #3498db; width: 20%; transition: width 0.3s; }
+
+        /* منطقة الوضعية */
+        .scenario-box { background: #fffde7; border: 1px solid #fff9c4; padding: 15px; border-radius: 8px; margin-bottom: 20px; line-height: 1.8; font-size: 1.05em; border-right: 5px solid #fbc02d; }
+        
+        /* التظليل (يظهر عند التحقق) */
+        .highlight { background-color: #ffeb3b; color: #000; font-weight: bold; padding: 2px 5px; border-radius: 3px; border: 1px solid #fbc02d; }
+        
+        /* الأسئلة */
+        .question-group { margin-bottom: 20px; border-bottom: 1px dashed #ddd; padding-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 8px; color: #2c3e50; }
+        select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background: #fff; font-size: 1em; margin-bottom: 5px; }
+        
+        /* الجدول */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em; }
+        th, td { border: 1px solid #bdc3c7; padding: 8px; text-align: right; vertical-align: middle; }
+        th { background: #f8f9fa; color: #2c3e50; }
+        
+        /* صندوق التصحيح */
+        .feedback { display: none; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 15px; border-radius: 8px; margin-top: 15px; animation: slideDown 0.3s ease-out; }
+        .feedback h4 { margin: 0 0 10px 0; color: #2e7d32; }
+        .lesson-note { background: #fff; padding: 10px; border-radius: 5px; border-right: 4px solid #3498db; margin-top: 10px; font-size: 0.9em; color: #555; }
+
+        /* الأزرار */
+        .btn { display: block; width: 100%; padding: 12px; border: none; border-radius: 6px; font-size: 1.1em; cursor: pointer; margin-top: 10px; font-weight: bold; }
+        .btn-check { background: #27ae60; color: white; }
+        .btn-next { background: #3498db; color: white; display: none; }
+        .step { display: none; }
+        .step.active { display: block; }
+
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 style="text-align:center; color:#2c3e50;">تحليل الممارسات الصفية (5 تمارين)</h2>
+    <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+
+    <div id="step1" class="step active">
+        <h3>الوضعية رقم 1</h3>
+        <div class="scenario-box">
+            في حصة النشيد، لاحظ الأستاذ صعوبة الحفظ، فقام بـ <span id="txt1-1">تقسيم النشيد لأجزاء صغيرة وتكرارها عدة مرات</span>، ووعد التلاميذ بـ <span id="txt1-2">منح "نقطة حسنة" لكل من يستظهر المقطع</span> بشكل صحيح.
+        </div>
+
+        <div class="question-group">
+            <label>1. ما هي النظرية المعتمدة هنا؟</label>
+            <select id="q1-theory">
+                <option value="">اختر الجواب...</option>
+                <option value="gestalt">الجشتالتية</option>
+                <option value="behaviorism">السلوكية</option>
+                <option value="constructivism">البنائية</option>
+            </select>
+        </div>
+        <div class="question-group">
+            <label>2. ما هو المبدأ الذي طبقه الأستاذ؟</label>
+            <select id="q1-concept">
+                <option value="">اختر الجواب...</option>
+                <option value="insight">الاستبصار</option>
+                <option value="scaffold">الوساطة</option>
+                <option value="reinforce">التعزيز والتكرار</option>
+            </select>
+        </div>
+
+        <button class="btn btn-check" onclick="checkStep(1)">تحقق من الإجابة</button>
+        
+        <div id="feed1" class="feedback">
+            <h4>نتائج التحليل:</h4>
+            <p><strong>الإجابة الصحيحة:</strong> النظرية السلوكية - مبدأ التعزيز والتكرار.</p>
+            <div class="lesson-note">
+                [span_0](start_span)📚 <strong>من الدرس (ص 15):</strong> السلوكية (بافلوف/سكنر) تعتمد على تجزيء المعرفة إلى وحدات صغيرة، واستعمال "التكرار" لترسيخ السلوك، و"التعزيز" (النقطة الحسنة) للتشجيع[span_0](end_span).
+            </div>
+        </div>
+        <button class="btn btn-next" onclick="nextStep(2)">التمرين التالي</button>
+    </div>
+
+    <div id="step2" class="step">
+        <h3>الوضعية رقم 2</h3>
+        <div class="scenario-box">
+            في درس "الذوبان"، لم يشرح الأستاذ الدرس فوراً، بل <span id="txt2-1">أعطى التلاميذ كؤوساً وملحاً وطلب منهم التجريب بأنفسهم</span>. عندما أخطأ تلميذ، لم يصحح له الأستاذ، بل <span id="txt2-2">تركه يعيد المحاولة ليكتشف الخطأ ويبني المفهوم بنفسه</span>.
+        </div>
+
+        <div class="question-group">
+            <label>1. هذا الأسلوب يمثل النظرية:</label>
+            <select id="q2-theory">
+                <option value="">اختر...</option>
+                <option value="behaviorism">السلوكية</option>
+                <option value="constructivism">البنائية</option>
+                <option value="social">البنائية الاجتماعية</option>
+            </select>
+        </div>
+        <div class="question-group">
+            <label>2. كيف يُنظر للخطأ هنا؟</label>
+            <select id="q2-concept">
+                <option value="">اختر...</option>
+                <option value="bad">سلوك سيء يستوجب العقاب</option>
+                <option value="step">شرط للتعلم وبناء المعرفة</option>
+            </select>
+        </div>
+
+        <button class="btn btn-check" onclick="checkStep(2)">تحقق</button>
+        
+        <div id="feed2" class="feedback">
+            <h4>نتائج التحليل:</h4>
+            <div class="lesson-note">
+                📚 <strong>من الدرس (ص 26):</strong> النظرية البنائية (بياجي) تعتبر أن المتعلم "يبني معرفته" من خلال التفاعل المباشر مع الموضوع (التجريب). [span_1](start_span)الخطأ ليس عيباً بل هو ضروري لتعديل التمثل[span_1](end_span).
+            </div>
+        </div>
+        <button class="btn btn-next" onclick="nextStep(3)">التمرين التالي</button>
+    </div>
+
+    <div id="step3" class="step">
+        <h3>الوضعية رقم 3</h3>
+        <div class="scenario-box">
+            عجز التلميذ "كريم" عن حل المسألة بمفرده. <span id="txt3-1">وضعه الأستاذ مع زميله المتفوق "سعيد"</span>. من خلال التفاعل والنقاش مع سعيد، <span id="txt3-2">تمكن كريم من الحل الذي لم يستطعه وحده</span>.
+        </div>
+
+        <div class="question-group">
+            <label>1. النظرية المطبقة هي:</label>
+            <select id="q3-theory">
+                <option value="">اختر...</option>
+                <option value="constructivism">البنائية (بياجي)</option>
+                <option value="socioconstructivism">البنائية الاجتماعية (فيجوتسكي)</option>
+            </select>
+        </div>
+        <div class="question-group">
+            <label>2. ماذا تسمى المسافة بين ما يفعله كريم وحده وما يفعله مع سعيد؟</label>
+            <select id="q3-concept">
+                <option value="">اختر...</option>
+                <option value="zpd">المنطقة القريبة من التطور (ZPD)</option>
+                <option value="iq">معامل الذكاء</option>
+            </select>
+        </div>
+
+        <button class="btn btn-check" onclick="checkStep(3)">تحقق</button>
+        
+        <div id="feed3" class="feedback">
+            <h4>نتائج التحليل:</h4>
+            <div class="lesson-note">
+                📚 <strong>من الدرس (ص 26):</strong> فيجوتسكي يؤكد أن التعلم "اجتماعي". [span_2](start_span)مفهوم (ZPD) هو الفرق بين الإنجاز الفردي والإنجاز بمساعدة الآخرين[span_2](end_span).
+            </div>
+        </div>
+        <button class="btn btn-next" onclick="nextStep(4)">التمرين التالي</button>
+    </div>
+
+    <div id="step4" class="step">
+        <h3>الوضعية رقم 4</h3>
+        <div class="scenario-box">
+            لتدريس موضوع "المواطنة"، لم يكتفِ الأستاذ بالشرح، بل كلف التلاميذ بـ <span id="txt4-1">مشروع "تزيين القسم"</span>. توزع التلاميذ المهام وعملوا جماعة لحل المشكلات الواقعية، بهدف <span id="txt4-2">ربط التعلم بالحياة العملية</span>.
+        </div>
+
+        <div class="question-group">
+            <label>1. هذا يندرج ضمن الاتجاه الفلسفي:</label>
+            <select id="q4-theory">
+                <option value="">اختر...</option>
+                <option value="idealism">المثالي</option>
+                <option value="pragmatism">البراغماتي (النفعي)</option>
+                <option value="naturalism">الطبيعي</option>
+            </select>
+        </div>
+
+        <button class="btn btn-check" onclick="checkStep(4)">تحقق</button>
+        
+        <div id="feed4" class="feedback">
+            <h4>نتائج التحليل:</h4>
+            <div class="lesson-note">
+                📚 <strong>من الدرس (ص 37):</strong> الاتجاه البراغماتي (جون ديوي) يركز على "التعلم بالمشروع" و"حل المشكلات". [span_3](start_span)قيمة المعرفة تقاس بنفعها في الواقع[span_3](end_span).
+            </div>
+        </div>
+        <button class="btn btn-next" onclick="nextStep(5)">التمرين التالي</button>
+    </div>
+
+    <div id="step5" class="step">
+        <h3>الوضعية رقم 5: دراسة حالة (الكسور)</h3>
+        <div class="scenario-box">
+            لاحظت الأستاذة تعثراً في الكسور:
+            <br>1. جربت <span id="txt5-beh">التكرار والتعزيز</span>، فتحسن الحفظ لكن <span id="txt5-err">عادت الأخطاء عند تغيير المسألة</span>.
+            <br>2. انتقلت إلى <span id="txt5-cons">التجريب وبناء المعنى (قطع ورق)</span>.
+            <br>3. اعتمدت <span id="txt5-soc">العمل الجماعي (مساعدة الزملاء)</span>.
+            <br>4. ساعدتهم على رؤية <span id="txt5-ges">"الوضعية ككل" لاستخراج العلاقات</span>.
+            <br>5. وفرت <span id="txt5-hum">مناخاً آمناً لتجاوز الخوف</span>.
+        </div>
+
+        <p><strong>المطلوب: املأ الجدول بتحليل المشكلات الواردة في النص (كما في الامتحان):</strong></p>
+        <table>
+            <thead>
+                <tr>
+                    <th width="30%">المشكلة عند المتعلم</th>
+                    <th width="30%">مؤشر من النص (اضغط للتسطير)</th>
+                    <th width="40%">تفسيرها بنظرية تعلم</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>حفظ القواعد دون قدرة على التطبيق</td>
+                    <td><button onclick="highlightText('txt5-err')">أظهر المؤشر</button></td>
+                    <td>
+                        <select id="q5-1">
+                            <option value="">اختر النظرية...</option>
+                            <option value="correct">محدودية النظرية السلوكية</option>
+                            <option value="wrong">محدودية النظرية البنائية</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>الحاجة لبناء المعنى حسياً</td>
+                    <td><button onclick="highlightText('txt5-cons')">أظهر المؤشر</button></td>
+                    <td>
+                        <select id="q5-2">
+                            <option value="">اختر النظرية...</option>
+                            <option value="correct">النظرية البنائية (التجريب)</option>
+                            <option value="wrong">النظرية السلوكية</option>
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <td>فهم البنية الكلية للعلاقات</td>
+                    <td><button onclick="highlightText('txt5-ges')">أظهر المؤشر</button></td>
+                    <td>
+                        <select id="q5-3">
+                            <option value="">اختر النظرية...</option>
+                            <option value="wrong">النظرية الطبيعية</option>
+                            <option value="correct">النظرية الجشتالتية (الاستبصار)</option>
+                        </select>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <button class="btn btn-check" onclick="checkStep(5)">تحقق من الجدول</button>
+        
+        <div id="feed5" class="feedback">
+            <h4>تصحيح دراسة الحالة:</h4>
+            <div class="lesson-note">
+                <ul>
+                    [span_4](start_span)<li><strong>المشكلة 1:</strong> التعلم بالسلوكية (تكرار) يخلق حفظاً آلياً، لذا يفشل التلميذ عند تغيير السياق[span_4](end_span).</li>
+                    [span_5](start_span)<li><strong>المشكلة 2:</strong> البنائية تحل المشكل عبر "بناء المفهوم" بالتجريب وليس الحفظ[span_5](end_span).</li>
+                    [span_6](start_span)<li><strong>المشكلة 3:</strong> الجشتالتية تساعد عبر "الاستبصار" (فهم بنية الكل)[span_6](end_span).</li>
+                </ul>
+            </div>
+            <button class="btn" style="background:#333; color:white;" onclick="alert('أحسنت! أنهيت السلسلة.')">إنهاء</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    function checkStep(step) {
+        let isCorrect = false;
+        const feedback = document.getElementById('feed' + step);
+        const nextBtn = document.querySelector(`#step${step} .btn-next`);
+
+        // منطق التحقق لكل تمرين
+        if (step === 1) {
+            const v1 = document.getElementById('q1-theory').value;
+            const v2 = document.getElementById('q1-concept').value;
+            if (v1 === 'behaviorism' && v2 === 'reinforce') {
+                isCorrect = true;
+                highlightText('txt1-1'); highlightText('txt1-2');
+            }
+        } else if (step === 2) {
+            const v1 = document.getElementById('q2-theory').value;
+            const v2 = document.getElementById('q2-concept').value;
+            if (v1 === 'constructivism' && v2 === 'step') {
+                isCorrect = true;
+                highlightText('txt2-1'); highlightText('txt2-2');
+            }
+        } else if (step === 3) {
+            const v1 = document.getElementById('q3-theory').value;
+            const v2 = document.getElementById('q3-concept').value;
+            if (v1 === 'socioconstructivism' && v2 === 'zpd') {
+                isCorrect = true;
+                highlightText('txt3-1'); highlightText('txt3-2');
+            }
+        } else if (step === 4) {
+            const v1 = document.getElementById('q4-theory').value;
+            if (v1 === 'pragmatism') {
+                isCorrect = true;
+                highlightText('txt4-1'); highlightText('txt4-2');
+            }
+        } else if (step === 5) {
+            const v1 = document.getElementById('q5-1').value;
+            const v2 = document.getElementById('q5-2').value;
+            const v3 = document.getElementById('q5-3').value;
+            if (v1 === 'correct' && v2 === 'correct' && v3 === 'correct') {
+                isCorrect = true;
+            }
+        }
+
+        if (isCorrect) {
+            feedback.style.display = 'block';
+            if (nextBtn) nextBtn.style.display = 'block';
+        } else {
+            alert('حاول مرة أخرى! تأكد من اختياراتك.');
+        }
+    }
+
+    function nextStep(step) {
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById('step' + step).classList.add('active');
+        document.getElementById('progressBar').style.width = (step * 20) + '%';
+        window.scrollTo(0, 0);
+    }
+
+    function highlightText(id) {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('highlight');
+    }
+</script>
+
+</body>
+  </html>
+    
