@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سلسلة تمارين علوم التربية - ENS</title>
+    <style>
+        :root { --primary: #2c3e50; --accent: #3498db; --success: #27ae60; --bg: #f8f9fa; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: #333; margin: 0; padding: 15px; line-height: 1.6; }
+        
+        /* حاوية التطبيق */
+        .app-container { max-width: 800px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); overflow: hidden; }
+        
+        /* الرأس */
+        header { background: var(--primary); color: white; padding: 15px; text-align: center; }
+        header h1 { margin: 0; font-size: 1.2rem; }
+        .progress-bar { height: 5px; background: #ddd; margin-top: 10px; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--accent); width: 20%; transition: width 0.3s ease; }
+
+        /* منطقة التمرين */
+        .exercise-step { display: none; padding: 20px; animation: fadeIn 0.4s; }
+        .exercise-step.active { display: block; }
+        
+        /* نص الوضعية */
+        .case-text { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 25px; font-size: 1rem; line-height: 1.8; position: relative; }
+        .case-label { position: absolute; top: -10px; right: 15px; background: #fbc02d; color: #fff; padding: 2px 10px; font-size: 0.8rem; border-radius: 4px; font-weight: bold; }
+        
+        /* التظليل */
+        .highlight { background-color: #ff5252; color: white; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+        .highlight-blue { background-color: #3498db; color: white; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+
+        /* الأسئلة */
+        .question-block { margin-bottom: 20px; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .q-title { font-weight: bold; color: var(--accent); margin-bottom: 8px; display: block; font-size: 0.95rem; }
+        .q-sub { font-size: 0.9rem; color: #666; margin-bottom: 10px; }
+        
+        select, textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-family: inherit; margin-bottom: 5px; box-sizing: border-box; }
+        
+        /* الأزرار */
+        .btn-group { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+        button { padding: 12px; border: none; border-radius: 6px; font-size: 1rem; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn-check { background: var(--success); color: white; }
+        .btn-check:hover { background: #219150; }
+        .btn-next { background: var(--accent); color: white; display: none; }
+        
+        /* التصحيح */
+        .correction-box { background: #e8f6f3; border: 1px solid #c3e6cb; padding: 15px; border-radius: 8px; margin-top: 20px; display: none; font-size: 0.9rem; }
+        .correction-box h3 { margin-top: 0; color: #0f5132; font-size: 1rem; }
+        .ref-tag { display: inline-block; background: #eee; padding: 3px 8px; border-radius: 4px; font-size: 0.8rem; color: #555; margin-top: 5px; }
+
+        /* الجدول */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: right; }
+        th { background: #f1f1f1; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h1 id="header-title">تمرين 1: اللغات (السلوكية vs البنائية)</h1>
+        <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+    </header>
+
+    <div id="step1" class="exercise-step active">
+        <div class="case-text">
+            <span class="case-label">وضعية 1: تعليم اللغات</span>
+            في درس اللغة الفرنسية، بدأ الأستاذ بتحفيظ التلاميذ قائمة من المفردات عبر <span id="t1-beh">التكرار الجماعي ومنح نقاط للحفظ الجيد</span>. لاحظ أنهم يحفظون الكلمات لكن يعجزون عن استخدامها في جمل. في الحصة التالية، غيّر الطريقة: عرض صوراً ووضعيات، وطلب منهم <span id="t1-cons">بناء الجمل بأنفسهم انطلاقاً من السياق</span>، فلاحظ تحسناً في الفهم والاستعمال.
+        </div>
+
+        <div class="question-block">
+            <span class="q-title">س1 (تذكر): استخرج النظريات المشار إليها في النص.</span>
+            <select>
+                <option>اختر الإجابة...</option>
+                <option>السلوكية (التكرار) والبنائية (بناء السياق)</option>
+                <option>التحليل النفسي والجشتالت</option>
+            </select>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س2 (تذكر): اربط النظرية برائدها.</span>
+            <p class="q-sub">السلوكية (تكرار وتعزيز) = ؟ | البنائية (بناء ذاتي) = ؟</p>
+            <select>
+                <option>اختر...</option>
+                <option>السلوكية (سكنر) / البنائية (بياجي)</option>
+                <option>السلوكية (فيجوتسكي) / البنائية (واطسون)</option>
+            </select>
+        </div>
+
+        <div class="question-block">
+            <span class="q-title">س3 (فهم): لماذا نجح التكرار في الحفظ وفشل في الاستعمال؟</span>
+            <textarea placeholder="اكتب تحليلك هنا..."></textarea>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س4 (مقارنة): ما الفرق بين التعلم السلوكي والتعلم البنائي؟</span>
+            <textarea placeholder="اذكر فرقاً واحداً جوهرياً..."></textarea>
+        </div>
+
+        <div class="question-block">
+            <span class="q-title">س5 (تحليل): املأ الجدول</span>
+            <table>
+                <tr><th>المشكلة</th><th>المؤشر</th><th>التفسير النظري</th></tr>
+                <tr>
+                    <td>عجز عن الاستعمال</td>
+                    <td><button onclick="highlight('t1-beh', 't1-beh')">أظهر المؤشر</button></td>
+                    <td>التعلم السلوكي آلي ومحدود السياق</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-check" onclick="check(1)">تحقق من الأجوبة</button>
+            <div id="corr1" class="correction-box">
+                <h3>عناصر الإجابة الصحيحة:</h3>
+                <ul>
+                    [span_1](start_span)<li><strong>النظريات:</strong> الحصة الأولى (سلوكية: تكرار/تعزيز)[span_1](end_span)[span_2](start_span)، الحصة الثانية (بنائية: سياق/بناء ذاتي)[span_2](end_span).</li>
+                    [span_3](start_span)<li><strong>التفسير:</strong> التكرار يقوي "الذاكرة قصيرة المدى" والأداء الآلي، لكن غياب السياق يمنع "بناء المعنى"[span_3](end_span).</li>
+                    [span_4](start_span)<li><strong>الفرق:</strong> السلوكية تركز على السلوك الظاهر (النتيجة)، البنائية تركز على العمليات العقلية وبناء المعنى[span_4](end_span).</li>
+                </ul>
+            </div>
+            <button class="btn-next" onclick="nextStep(2)">التمرين التالي &larr;</button>
+        </div>
+    </div>
+
+    <div id="step2" class="exercise-step">
+        <div class="case-text">
+            <span class="case-label">وضعية 2: النشاط العلمي</span>
+            طلب الأستاذ من التلاميذ <span id="t2-cons">تجربة "الطفو والغوص" بشكل فردي، فواجه "أنس" صعوبة</span> ولم يفهم لماذا يغوص المسمار. بعد ذلك، <span id="t2-soc">وضعه الأستاذ في مجموعة، فقام زميله بشرح الفكرة له</span> ومساعدته في التجربة حتى فهم.
+        </div>
+
+        <div class="question-block">
+            <span class="q-title">س1: النظريات الواردة؟</span>
+            <select><option>البنائية والبنائية الاجتماعية</option><option>السلوكية والجشتالتية</option></select>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س2: الأعلام؟</span>
+            <p class="q-sub">البنائية الاجتماعية (التعلم مع الزميل) = ؟</p>
+            <select><option>فيجوتسكي</option><option>بافلوف</option></select>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س3: لماذا فهم أنس ضمن المجموعة؟</span>
+            <textarea placeholder="اشرح دور الزميل..."></textarea>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س4: الفرق بين البنائية والبنائية الاجتماعية؟</span>
+            <textarea placeholder="الفرق في دور الآخر..."></textarea>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س5 (تحليل): المشكلة والمؤشر</span>
+            <table>
+                <tr><th>المشكلة</th><th>المؤشر</th><th>التفسير النظري (فيجوتسكي)</th></tr>
+                <tr>
+                    <td>تعثر فردي</td>
+                    <td><button onclick="highlight('t2-cons', 't2-soc')">أظهر المؤشر</button></td>
+                    <td>الحاجة للمنطقة القريبة من التطور (ZPD)</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-check" onclick="check(2)">تحقق من الأجوبة</button>
+            <div id="corr2" class="correction-box">
+                <h3>التصحيح:</h3>
+                <ul>
+                    [span_5](start_span)<li><strong>النظريات:</strong> البنائية (التجربة الفردية)، البنائية الاجتماعية (المجموعة)[span_5](end_span).</li>
+                    [span_6](start_span)<li><strong>التفسير:</strong> الزميل لعب دور "الوسيط"، مما مكن أنس من تجاوز ما يعجز عنه بمفرده (ZPD)[span_6](end_span).</li>
+                    <li><strong>الفرق:</strong> البنائية: تفاعل الذات مع الموضوع. [span_7](start_span)البنائية الاجتماعية: تفاعل الذات مع الآخرين[span_7](end_span).</li>
+                </ul>
+            </div>
+            <button class="btn-next" onclick="nextStep(3)">التمرين التالي &larr;</button>
+        </div>
+    </div>
+
+    <div id="step3" class="exercise-step">
+        <div class="case-text">
+            <span class="case-label">وضعية 3: الرياضيات</span>
+            كان التلاميذ يدرسون الأضلاع والزوايا بشكل منفصل، ووجدوا صعوبة في إدراك مفهوم "المثلث". قام الأستاذ بتغيير الطريقة، <span id="t3-ges">عرض عليهم الشكل الهندسي كاملاً أولاً</span>، ثم طلب منهم تحليل عناصره، فحدث لهم فهم مفاجئ (استبصار) للعلاقة بين الأضلاع.
+        </div>
+
+        <div class="question-block">
+            <span class="q-title">س1: النظرية المعتمدة؟</span>
+            <select><option>النظرية الجشتالتية</option><option>النظرية السلوكية</option></select>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س2: أبرز روادها؟</span>
+            <select><option>كوهلر / كوفكا / فرتهيمر</option><option>واطسون / سكنر</option></select>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س3: لماذا نجح عرض "الكل" قبل الجزء؟</span>
+            <textarea placeholder="اشرح مفهوم البنية الكلية..."></textarea>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س4: ما الفرق بين السلوكية والجشتالتية؟</span>
+            <textarea placeholder="الفرق في التعامل مع الأجزاء..."></textarea>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س5 (تحليل)</span>
+            <table>
+                <tr><th>المشكلة</th><th>المؤشر</th><th>التفسير النظري</th></tr>
+                <tr>
+                    <td>صعوبة التجزئة</td>
+                    <td><button onclick="highlight('t3-ges', 't3-ges')">أظهر المؤشر</button></td>
+                    <td>الإدراك يبدأ بالكل وليس بالأجزاء (الاستبصار)</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-check" onclick="check(3)">تحقق من الأجوبة</button>
+            <div id="corr3" class="correction-box">
+                <h3>التصحيح:</h3>
+                <ul>
+                    [span_8](start_span)<li><strong>النظرية:</strong> الجشتالتية (Gestalt)[span_8](end_span).</li>
+                    <li><strong>التفسير:</strong> العقل يدرك البنيات الكلية (Structure) قبل التفاصيل. [span_9](start_span)الفهم يحدث عبر "الاستبصار"[span_9](end_span).</li>
+                    <li><strong>الفرق:</strong> السلوكية تفكك السلوك لأجزاء صغيرة. الجشتالتية ترفض التفكيك وتعتبر الكل أكبر من مجموع الأجزاء.</li>
+                </ul>
+            </div>
+            <button class="btn-next" onclick="nextStep(4)">التمرين التالي &larr;</button>
+        </div>
+    </div>
+
+    <div id="step4" class="exercise-step">
+        <div class="case-text">
+            <span class="case-label">وضعية 4: مشروع القسم</span>
+            وجد التلاميذ درس "الحفاظ على البيئة" مملاً نظرياً. اقترح الأستاذ <span id="t4-prag">مشروعاً حقيقياً لتنظيف ساحة المدرسة وتزيينها</span>. انخرط التلاميذ بحماس ووزعوا المهام، وتعلموا قيم التعاون وحل المشكلات من خلال <span id="t4-act">الممارسة الفعلية والنتيجة النفعية</span>.
+        </div>
+
+        <div class="question-block">
+            <span class="q-title">س1: الاتجاه الفلسفي/التربوي؟</span>
+            <select><option>الاتجاه البراغماتي (النفعي)</option><option>الاتجاه المثالي</option></select>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س2: الرائد الأساسي؟</span>
+            <select><option>جون ديوي</option><option>أفلاطون</option></select>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س3: لماذا نجح المشروع مقارنة بالدرس النظري؟</span>
+            <textarea placeholder="اربط الجواب بالنفعية..."></textarea>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س4: الفرق بين المدرسة التقليدية والتقدمية (ديوي)؟</span>
+            <textarea placeholder="دور المتعلم..."></textarea>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س5 (تحليل)</span>
+            <table>
+                <tr><th>المشكلة</th><th>المؤشر</th><th>التفسير النظري</th></tr>
+                <tr>
+                    <td>ملل نظري</td>
+                    <td><button onclick="highlight('t4-prag', 't4-act')">أظهر المؤشر</button></td>
+                    <td>التعلم يحدث بالممارسة والفعل (Learning by doing)</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-check" onclick="check(4)">تحقق من الأجوبة</button>
+            <div id="corr4" class="correction-box">
+                <h3>التصحيح:</h3>
+                <ul>
+                    [span_10](start_span)<li><strong>الاتجاه:</strong> البراغماتي (التربية التقدمية)[span_10](end_span).</li>
+                    [span_11](start_span)<li><strong>التفسير:</strong> قيمة المعرفة في نفعها العملي وحل المشكلات الواقعية[span_11](end_span).</li>
+                    <li><strong>الفرق:</strong> التقليدية (حفظ نظري). [span_12](start_span)التقدمية (نشاط، مشاريع، اتصال بالواقع)[span_12](end_span).</li>
+                </ul>
+            </div>
+            <button class="btn-next" onclick="nextStep(5)">التمرين التالي &larr;</button>
+        </div>
+    </div>
+
+    <div id="step5" class="exercise-step">
+        <div class="case-text">
+            <span class="case-label">وضعية 5: الكسور (دراسة الحالة الشاملة)</span>
+            لاحظت الأستاذة صعوبة في فهم الكسور. حاولت:
+            <br>1. <span id="t5-beh">تقسيم المهارات وتكرار التدريبات وتعزيز الإجابات</span> (تحسن مؤقت وعودة الأخطاء عند تغيير المسألة).
+            <br>2. أنشطة <span id="t5-cons">التجريب وبناء المعنى (قطع ورق)</span> ليكتشفوا المفهوم بأنفسهم.
+            <br>3. عمل <span id="t5-soc">تعاوني في مجموعات مع مساعدة الزملاء</span>.
+            <br>4. فهم التلاميذ حين طلبت منهم رؤية <span id="t5-ges">"الوضعية ككل" واستخراج العلاقات (استبصار)</span>.
+            <br>5. توفير <span id="t5-hum">مناخ داعم لتجاوز الخوف من الخطأ</span>.
+        </div>
+
+        <div class="question-block">
+            <span class="q-title">س1 (تذكر): اذكر 4 نظريات وردت في النص.</span>
+            <select>
+                <option>اختر...</option>
+                <option>سلوكية، بنائية، بنائية اجتماعية، جشتالتية</option>
+            </select>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س2 (تذكر): اربط كل نظرية برائدها.</span>
+            <p class="q-sub">السلوكية (؟) | البنائية (؟) | الاجتماعية (؟) | الجشتالت (؟)</p>
+            <textarea placeholder="مثال: السلوكية (سكنر)..."></textarea>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س3 (فهم): لماذا نجحت التعزيزات مع البعض لكنها لم تنتج فهماً ثابتاً؟</span>
+            <textarea placeholder="لماذا عاد الخطأ عند تغيير المسألة؟"></textarea>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س4 (فهم): الفرق بين البنائية والبنائية الاجتماعية؟</span>
+            <textarea placeholder="5-6 أسطر حول دور التفاعل..."></textarea>
+        </div>
+        <div class="question-block">
+            <span class="q-title">س5 (تحليل): املأ الجدول (كما في الامتحان)</span>
+            <table>
+                <tr><th>المشكلة</th><th>المؤشر</th><th>التفسير النظري</th></tr>
+                <tr>
+                    <td>حفظ دون فهم</td>
+                    <td><button onclick="highlight('t5-beh', 't5-beh')">أظهر المؤشر</button></td>
+                    <td>محدودية السلوكية (تعلم آلي)</td>
+                </tr>
+                <tr>
+                    <td>فهم العلاقات</td>
+                    <td><button onclick="highlight('t5-ges', 't5-ges')">أظهر المؤشر</button></td>
+                    <td>أهمية الاستبصار (الجشتالت)</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="btn-group">
+            <button class="btn-check" onclick="check(5)">تحقق من الأجوبة</button>
+            <div id="corr5" class="correction-box">
+                [span_13](start_span)<h3>تصحيح دراسة الحالة [cite: 142-147]:</h3>
+                <ul>
+                    <li><strong>س1:</strong> السلوكية، البنائية، البنائية الاجتماعية، الجشتالتية.</li>
+                    <li><strong>س2:</strong> السلوكية (سكنر/واطسون)، البنائية (بياجي)، الاجتماعية (فيجوتسكي)، الجشتالت (كوهلر).</li>
+                    [cite_start]<li><strong>س3:</strong> التعزيز يحسن "الأداء الإجرائي" (الحفظ) لكنه لا يبني "المعنى"، لذا يفشل المتعلم عند تغيير السياق[span_13](end_span).</li>
+                    <li><strong>س4:</strong> البنائية: بناء ذاتي عبر الاحتكاك بالموضوع. [span_14](start_span)الاجتماعية: بناء عبر التفاعل واللغة والوساطة (ZPD)[span_14](end_span).</li>
+                    <li><strong>س5:</strong>
+                        <br>- المشكلة: فهم شكلي للكسور. النظرية: السلوكية.
+                        <br>- المشكلة: صعوبة التجريد. النظرية: البنائية (التجريب).
+                    </li>
+                </ul>
+                <button class="btn-next" onclick="alert('انتهت التمارين! بالتوفيق في الامتحان.')" style="background:#333; display:block; margin-top:10px;">إنهاء السلسلة</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    let currentStep = 1;
+
+    function nextStep(step) {
+        // إخفاء الحالي وإظهار التالي
+        document.getElementById(`step${currentStep}`).classList.remove('active');
+        document.getElementById(`step${step}`).classList.add('active');
+        
+        // تحديث العنوان وشريط التقدم
+        currentStep = step;
+        document.getElementById('progress').style.width = `${step * 20}%`;
+        
+        const titles = [
+            "1: اللغات (السلوكية vs البنائية)",
+            "2: العلوم (البنائية الاجتماعية)",
+            "3: الرياضيات (الجشتالت)",
+            "4: المشاريع (البراغماتية)",
+            "5: دراسة الحالة (الكسور)"
+        ];
+        document.getElementById('header-title').innerText = `تمرين ${step}: ${titles[step-1]}`;
+        
+        // الصعود للأعلى
+        window.scrollTo(0, 0);
+    }
+
+    function check(step) {
+        // إظهار صندوق التصحيح
+        document.getElementById(`corr${step}`).style.display = 'block';
+        // إظهار زر التالي
+        if(step < 5) {
+            document.querySelector(`#step${step} .btn-next`).style.display = 'block';
+        }
+    }
+
+    function highlight(id1, id2) {
+        // إزالة أي تظليل سابق في الخطوة الحالية
+        
